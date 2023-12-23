@@ -1,0 +1,26 @@
+# Dependency directories
+node_modules/
+
+# Compiled JavaScript files
+dist/
+*.js
+*.js.map
+
+# TypeScript cache
+*.tsbuildinfo
+
+# Environment files
+.env
+
+# Editor directories and files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
