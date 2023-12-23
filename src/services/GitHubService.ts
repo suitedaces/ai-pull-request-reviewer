@@ -75,17 +75,17 @@ export class GitHubService {
     }
   }
 
-  async labelPullRequest(owner: string, repo: string, pull_number: number, labels: string[]): Promise<void> {
-    try {
-      await this.octokit.issues.addLabels({
-        owner,
-        repo,
-        issue_number: pull_number,
-        labels,
-      });
-    } catch (error) {
-      console.error(`Error adding labels to PR #${pull_number}:`, error);
-      throw error;
-    }
-  }
+//   async labelPullRequest(owner: string, repo: string, pull_number: number, labels: string[]): Promise<void> {
+//     try {
+//       await this.octokit.issues.addLabels({
+//         owner,
+//         repo,
+//         issue_number: pull_number,
+//         labels,
+//       });
+//     } catch (error) {
+//       console.error(`Error adding labels to PR #${pull_number}:`, error);
+//       throw error;
+//     }
+//   }
 }
