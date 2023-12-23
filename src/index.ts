@@ -1,32 +1,47 @@
 import { readFileSync } from "fs";
-import { GitHubService } from "./services/GithubService";
+import { GitHubService } from "./services/GitHubService";
 import { OpenAIService } from "./services/OpenAIService";
 import { createPrompt } from "./utils/utils";
 import { getConfig } from "./config/config";
-import { PRComment } from "./utils/types";
+import { File, Chunk, PRComment, PRMetadata } from "./utils/types";
 import { minimatch } from "minimatch";
 import parseDiff from "parse-diff";
 
-
 async function main() {
-  const appConfig = getConfig();
-  const githubService = new GitHubService(appConfig.GITHUB_TOKEN);
-  const aiService = new OpenAIService(appConfig.OPENAI_API_KEY);
-
   try {
-    const prDetails = await fetchPRMetadata(githubService);
-    const prDiff = await fetchPRDiff(githubService, prDetails);
-    if (!prDiff) {
-      console.log("No changes detected in the pull request.");
-      return;
-    }
+    const appConfig = getConfig();
+    const githubService = new GitHubService(appConfig.GITHUB_TOKEN);
+    const aiService = new OpenAIService(appConfig.OPENAI_API_KEY);
 
-    const diffFiles = parseDiff(prDiff);
+    // Fetch PR metadata
+    const prDetails = await fetchPRMetadata(githubService);
+
+    // Fetch PR diff
+    const prDiff = await fetchPRDiff(githubService, prDetails);
+    const diffFiles: File[] = parseDiff(prDiff).map((file) => ({
+      path: file.to ?? "",
+      chunks: file.chunks ?? [],
+    }));
+
+    // Filter files based on exclude patterns
     const filteredFiles = filterFiles(diffFiles, appConfig.EXCLUDE_PATTERNS);
-    const reviewComments = await analyzeDiffAndGenerateComments(filteredFiles, prDetails, aiService, appConfig);
+
+    // Analyze the diff and generate comments
+    const reviewComments = await analyzeDiffAndGenerateComments(
+      filteredFiles,
+      prDetails,
+      aiService,
+      appConfig
+    );
 
     if (reviewComments.length > 0) {
-      await githubService.createReviewComment(prDetails.owner, prDetails.repo, prDetails.pull_number, reviewComments);
+      // Create review comments on the pull request
+      await githubService.createReviewComment(
+        prDetails.owner,
+        prDetails.repo,
+        prDetails.pull_number,
+        reviewComments
+      );
       console.log(`Posted ${reviewComments.length} comments on the pull request.`);
     } else {
       console.log("No review comments to post.");
@@ -38,48 +53,77 @@ async function main() {
 }
 
 async function fetchPRMetadata(githubService: GitHubService) {
-    const eventPath = process.env.GITHUB_EVENT_PATH ?? "";
-    if (!eventPath) {
-      throw new Error("GitHub event path is not available.");
-    }
-    return await githubService.getPRMetadata(eventPath);
+  const eventPath = process.env.GITHUB_EVENT_PATH ?? "";
+  if (!eventPath) {
+    throw new Error("GitHub event path is not available.");
+  }
+  return await githubService.getPRMetadata(eventPath);
 }
 
-async function fetchPRDiff(githubService: GitHubService, prDetails) {
-    return await githubService.getDiff(prDetails.owner, prDetails.repo, prDetails.pull_number);
+async function fetchPRDiff(
+  githubService: GitHubService,
+  prDetails: PRMetadata
+) {
+  return await githubService.getDiff(
+    prDetails.owner,
+    prDetails.repo,
+    prDetails.pull_number
+  );
 }
 
-function filterFiles(files, excludePatterns: string) {
+function filterFiles(files: File[], excludePatterns: string) {
   // Split into an array of patterns
-  const patterns = excludePatterns.split(",").map(pattern => pattern.trim());
+  const patterns = excludePatterns.split(",").map((pattern) => pattern.trim());
 
   // Return files that do not match any of the patterns
-  return files.filter(file => {
-    return !patterns.some(pattern => minimatch(file.path ?? "", pattern));
+  return files.filter((file) => {
+    return !patterns.some((pattern) =>
+      minimatch(file.path ?? "", pattern)
+    );
   });
 }
 
-// Might need to make this faster and handle rate limiting errors
-async function analyzeDiffAndGenerateComments(files, prDetails, aiService: OpenAIService, appConfig) {
-    const comments = [];
-    for (const file of files) {
-        if (file.path === "/dev/null") continue; // Ignore deleted files
+// Analyze the diff and generate comments
+async function analyzeDiffAndGenerateComments(
+  files: File[],
+  prDetails: PRMetadata,
+  aiService: OpenAIService,
+  appConfig: {
+    GITHUB_TOKEN?: any;
+    OPENAI_API_KEY?: any;
+    OPENAI_API_MODEL: any;
+    EXCLUDE_PATTERNS?: any;
+  }
+) {
+  const comments: PRComment[] = [];
+  for (const file of files) {
+    if (file.path === "/dev/null") continue; // Ignore deleted files
 
-        for (const chunk of file.chunks) {
-            const comments: PRComment[] = [];
-            const prompt = createPrompt(file, chunk, prDetails);
-            const aiResponse = await aiService.getAIResponse(prompt, appConfig.OPENAI_API_MODEL);
+    for (const chunk of file.chunks) {
+      const fileChunkComments: PRComment[] = [];
 
-            if (aiResponse && aiResponse.length > 0) {
-                const fileComments: PRComment[] = aiResponse.map(({ lineNumber, reviewComment }) => ({
-                    body: reviewComment,
-                    path: file.path,
-                    line: Number(lineNumber)
-                }));
-                comments.push(...fileComments);
-            }
-        }
+      // Generate a prompt for AI review
+      const prompt = createPrompt(file, chunk, prDetails);
+
+      // Get AI response
+      const aiResponse = await aiService.getAIResponse(
+        prompt,
+        appConfig.OPENAI_API_MODEL
+      );
+
+      if (aiResponse && aiResponse.length > 0) {
+        const fileComments: PRComment[] = aiResponse.map(
+          ({ lineNumber, reviewComment }) => ({
+            body: reviewComment,
+            path: file.path,
+            line: Number(lineNumber),
+          })
+        );
+        fileChunkComments.push(...fileComments);
+      }
+
+      comments.push(...fileChunkComments);
     }
-    return comments;
+  }
+  return comments;
 }
-
