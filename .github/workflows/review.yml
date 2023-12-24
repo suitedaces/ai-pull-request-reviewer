@@ -4,9 +4,7 @@ on:
   pull_request:
     types: [opened, synchronize, reopened]
 
-permissions: 
-  contents: read
-  pull-requests: write
+permissions: write-all
 
 jobs:
   pr_review:  # Unique identifier for the job
