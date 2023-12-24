@@ -20,8 +20,12 @@ jobs:
 
       - name: Commit and push dist directory
         run: |
-          git config --global user.name 'suitedaces'
-          git config --global user.email 'ishannagpal554@gmail.com'
-          git add dist/
-          git commit -m 'Update dist directory'
-          git push
+          if git diff --quiet; then
+            echo "No changes in dist, skipping commit"
+          else
+            git config --global user.name 'suitedaces'
+            git config --global user.email 'ishannagpal554@gmail.com'
+            git add dist/
+            git commit -m 'Update dist directory'
+            git push
+          fi
