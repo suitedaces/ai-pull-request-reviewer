@@ -19,10 +19,10 @@ async function main() {
     // Fetch PR diff
     const prDiff = await fetchPRDiff(githubService, prDetails);
     const diffFiles: File[] = parseDiff(prDiff).map((file) => ({
-      path: file.to ?? "",
+sdfcqqwdfqef2ef2edcw
       chunks: file.chunks ?? [],
     }));
-
+dcwdcwedcw 
     // Filter files based on excluded patterns
     const filteredFiles = filterFiles(diffFiles, appConfig.EXCLUDE_PATTERNS);
 
@@ -32,7 +32,7 @@ async function main() {
       prDetails,
       aiService,
       appConfig
-    );
+    );cwcwdc
 
     if (reviewComments.length > 0) {
       // Create review comments on the pull request
