@@ -38,8 +38,8 @@ export class GitHubService {
         owner: repository.owner.login,
         repo: repository.name,
         pull_number: number,
-        title: repository.title,
-        description: repository.description,
+        title: prResponse.data.title ?? "",
+        description: prResponse.data.body ?? ""
       };
 
     } catch (error) {
