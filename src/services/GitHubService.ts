@@ -15,8 +15,10 @@ export class GitHubService {
   async getPRMetadata(eventPath: string): Promise<PRMetadata> {
     try {
       const event = JSON.parse(readFileSync(eventPath, "utf8"));
+      console.log("\nEvent data:", event)
       const { repository, number } = event.pull_request ? event.pull_request : event;
-      
+      console.log("\nRepository:", repository)
+      console.log("\nNumber:", number)
       if (!repository || !number) {
         throw new Error("Invalid event data. Repository or PR number is missing.");
       }
