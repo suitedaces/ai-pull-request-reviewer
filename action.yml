@@ -1,0 +1,20 @@
+name: 'Dexter - AI Code Reviewer'
+author: 'Ishan Nagpal'
+description: 'Automated code review with Dexter AI using OpenAI models'
+inputs:
+  GITHUB_TOKEN:
+    description: 'GitHub Token for authentication'
+    required: true
+  OPENAI_API_KEY:
+    description: 'OpenAI API Key for accessing AI models'
+    required: true
+  OPENAI_API_MODEL:
+    description: 'The OpenAI model to use for code review'
+    required: false
+    default: 'gpt-4-0314'
+runs:
+  using: 'node18'
+  main: 'dist/index.js'
+branding:
+  icon: 'eye'
+  color: 'blue'

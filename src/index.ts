@@ -23,7 +23,7 @@ async function main() {
       chunks: file.chunks ?? [],
     }));
 
-    // Filter files based on exclude patterns
+    // Filter files based on excluded patterns
     const filteredFiles = filterFiles(diffFiles, appConfig.EXCLUDE_PATTERNS);
 
     // Analyze the diff and generate comments
