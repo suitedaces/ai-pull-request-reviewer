@@ -2,9 +2,9 @@
 node_modules/
 
 # Compiled JavaScript files
-dist/
-*.js
-*.js.map
+# dist/
+# *.js
+# *.js.map
 
 # TypeScript cache
 *.tsbuildinfo
