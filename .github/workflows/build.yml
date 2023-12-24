@@ -1,0 +1,32 @@
+name: Dexter AI Build Workflow
+
+on:
+  push:
+    branches:
+      - main  # Trigger the workflow on pushes to the main branch
+
+permissions: 
+  contents: write
+  
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build TypeScript
+        run: npm run package
+
+      - name: Commit and push dist directory
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} 
+        run: |
+          git config --global user.name 'suitedaces'
+          git config --global user.email 'ishannagpal554@gmail.com'
+          git add dist/ -f
+          git commit -m 'Generated dist/ build artifact'
+          git -c http.extraHeader="AUTHORIZATION: basic $(echo -n x-access-token:${GITHUB_TOKEN} | base64)" push

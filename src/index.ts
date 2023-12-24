@@ -127,3 +127,14 @@ async function analyzeDiffAndGenerateComments(
   }
   return comments;
 }
+
+(async () => {
+  try {
+    console.log("Starting script execution.");
+    await main();
+    console.log("Script executed successfully.");
+  } catch (error) {
+    console.error("Error occurred during script execution:", error);
+    process.exit(1);
+  }
+})();
