@@ -1,0 +1,27 @@
+name: Dexter AI Code Review Workflow
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+permissions: 
+  contents: read
+  pull-requests: write
+jobs:
+  code_review:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build TypeScript
+        run: npm run build
+
+      - name: Commit and push dist directory
+        run: |
+          git config --global user.name 'suitedaces'
+          git config --global user.email 'ishannagpal554@gmail.com'
+          git add dist/
+          git commit -m 'Update dist directory'
+          git push
