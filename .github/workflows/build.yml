@@ -1,0 +1,31 @@
+name: Dexter AI Code Review Workflow
+
+on:
+  push:
+    branches:
+      - main  # Trigger the workflow on pushes to the main branch
+
+jobs:
+  code_review:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build TypeScript
+        run: npm run build
+
+      - name: Commit and push dist directory
+        run: |
+          git config --global user.name 'suitedaces'
+          git config --global user.email 'ishannagpal554@gmail.com'
+          git add dist/
+          if git diff --quiet; then
+            echo "No changes in dist, skipping commit"
+          else
+            git commit -m 'Update dist directory'
+            git push
+          fi
