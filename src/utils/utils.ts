@@ -12,9 +12,9 @@ export function createPrompt(file: File, chunk: Chunk, prDetails: PRMetadata): s
 
   const prContext = `Review Context: Pull Request Title - '${prDetails.title}'. Description: ${prDetails.description}`;
 
-  const codeDiff = `Code to Review (File: ${file.path}): \`\`\`diff ${chunk.content} ${chunk.changes.map(c => `${c.start_line ? c.start_line : c.end_line} ${c.content}`).join("\n")} \`\`\``;
+  const codeDiff = `Code to Review (File: ${file.path}): \n \`\`\` \ndiff ${chunk.content} ${chunk.changes.map(c => `${c.ln ? c.ln : c.ln2} ${c.content}`).join("\n")} \`\`\`\n`;
 
-  const prompt = `Review Task: ${instructions} Context: ${prContext} \n Code Diff: ${codeDiff}`;
+  const prompt = `Review Task: ${instructions} \n Context: ${prContext} \n Code Diff: ${codeDiff}`;
   console.log("Prompt: ", prompt)
   return prompt;
 }
