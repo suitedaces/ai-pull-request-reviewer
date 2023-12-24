@@ -9,7 +9,7 @@ permissions:
   pull-requests: write
 
 jobs:
-  code_review:  # Unique identifier for the job
+  pr_review:  # Unique identifier for the job
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository

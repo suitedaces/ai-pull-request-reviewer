@@ -13,7 +13,7 @@ inputs:
     required: false
     default: 'gpt-4-0314'
 runs:
-  using: 'node18'
+  using: 'node20'
   main: 'dist/index.js'
 branding:
   icon: 'eye'

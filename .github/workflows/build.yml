@@ -28,5 +28,5 @@ jobs:
           git config --global user.name 'suitedaces'
           git config --global user.email 'ishannagpal554@gmail.com'
           git add dist/ -f
-          git commit -m 'Update dist directory'
+          git commit -m 'Generated dist/ build artifact'
           git -c http.extraHeader="AUTHORIZATION: basic $(echo -n x-access-token:${GITHUB_TOKEN} | base64)" push
