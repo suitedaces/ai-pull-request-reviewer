@@ -57,6 +57,7 @@ async function fetchPRMetadata(githubService: GitHubService) {
   if (!eventPath) {
     throw new Error("GitHub event path is not available.");
   }
+  console.log("Fetching PR metadata from event path:", eventPath)
   return await githubService.getPRMetadata(eventPath);
 }
 
