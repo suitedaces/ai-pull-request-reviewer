@@ -2,7 +2,7 @@
   "name": "dexter-ai",
   "version": "0.0.1",
   "description": "AI PR Reviewer",
-  "main": "src/index.ts",
+  "main": "dist/index.js",
   "scripts": {
     "build": "tsc",
     "package": "ncc build --source-map --license licenses.txt"

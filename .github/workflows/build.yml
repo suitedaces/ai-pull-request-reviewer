@@ -1,4 +1,4 @@
-name: Dexter AI Code Review Workflow
+name: Dexter AI Build Workflow
 
 on:
   push:
