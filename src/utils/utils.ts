@@ -3,6 +3,7 @@ import { File, Chunk, PRMetadata } from "./types";
 export function createPrompt(file: File, chunk: Chunk, prDetails: PRMetadata): string {
   // Instructions for AI Review Process
   const instructions = `Respond in JSON format: {"reviews": [{"lineNumber": <line_number>, "reviewComment": "<review comment>"}]}. 
+                        DO NOT return a lineNumber that's blank in the diff, instead choose the line number that's closest to the code that needs to be reviewed.
                         Provide only constructive feedback in the reviewComment after reviewing the code for security vulnerabilities and adherence to coding best practices for the given language.
                         Make recommendations to make code more secure,faster easier to maintain, reduce redundancy.
                         If no improvements are necessary, keep the "reviews" array empty. 
