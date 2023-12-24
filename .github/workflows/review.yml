@@ -1,18 +1,23 @@
 name: Dexter AI Code Review Workflow
+
 on:
   pull_request:
     types: [opened, synchronize, reopened]
+
 permissions: 
   contents: read
   pull-requests: write
+
 jobs:
-  runs-on: ubuntu-latest
-  steps:
-    - name: Checkout repository
-      uses: actions/checkout@v3
-    - name: Code Review
-      uses: suitedaces/dexter@main
-      with:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-        OPENAI_API_MODEL: "gpt-4-1106-preview"
+  code_review:  # Unique identifier for the job
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Code Review
+        uses: suitedaces/dexter@main
+        with:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          OPENAI_API_MODEL: "gpt-4"
