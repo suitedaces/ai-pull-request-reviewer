@@ -15,32 +15,37 @@ export class GitHubService {
   async getPRMetadata(eventPath: string): Promise<PRMetadata> {
     try {
       const event = JSON.parse(readFileSync(eventPath, "utf8"));
-      console.log("\nEvent data:", event)
-      const { repository, number } = event.pull_request ? event.pull_request : event;
-      console.log("\nRepository:", repository)
-      console.log("\nNumber:", number)
-      if (!repository || !number) {
+      
+      
+      const repository = event.repository;
+      console.log('\nRepository: ', repository)
+      const number = event.number;
+      if (!repository || typeof number !== 'number') {
         throw new Error("Invalid event data. Repository or PR number is missing.");
       }
-
+      
       const prResponse = await this.octokit.pulls.get({
         owner: repository.owner.login,
         repo: repository.name,
         pull_number: number,
       });
+      
+      console.log('\nPR Response: ', prResponse)
 
       return {
         owner: repository.owner.login,
         repo: repository.name,
         pull_number: number,
-        title: prResponse.data.title ?? "",
-        description: prResponse.data.body ?? "",
+        title: repository.title,
+        description: repository.description,
       };
+
     } catch (error) {
       console.error("Error fetching PR details:", error);
       throw error;
     }
   }
+  
 
   async getDiff(owner: string, repo: string, pull_number: number): Promise<string | null> {
     try {
