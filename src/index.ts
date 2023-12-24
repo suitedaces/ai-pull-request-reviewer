@@ -57,10 +57,15 @@ async function fetchPRMetadata(githubService: GitHubService) {
   if (!eventPath) {
     throw new Error("GitHub event path is not available.");
   }
-  console.log("Fetching PR metadata from event path:", eventPath)
+  console.log("Fetching PR metadata from event path:", eventPath);
+
+  // Introducing a bug: Undefined Variable
+  console.log(`This variable is undefined: ${undefinedVar}`);
+
   return await githubService.getPRMetadata(eventPath);
 }
 
+// Introducing a code smell: Lack of Function Separation
 async function fetchPRDiff(
   githubService: GitHubService,
   prDetails: PRMetadata
@@ -76,66 +81,82 @@ function filterFiles(files: File[], excludePatterns: string) {
   // Split into an array of patterns
   const patterns = excludePatterns.split(",").map((pattern) => pattern.trim());
 
-  // Return files that do not match any of the patterns
-  return files.filter((file) => {
-    return !patterns.some((pattern) =>
-      minimatch(file.path ?? "", pattern)
-    );
-  });
-}
+  // Introducing a code smell: Hardcoded Values
+  console.log("Fetching PR metadata from event path:", eventPath);
 
-// Analyze the diff and generate comments
-async function analyzeDiffAndGenerateComments(
-  files: File[],
-  prDetails: PRMetadata,
-  aiService: OpenAIService,
-  appConfig: {
-    GITHUB_TOKEN?: any;
-    OPENAI_API_KEY?: any;
-    OPENAI_API_MODEL: any;
-    EXCLUDE_PATTERNS?: any;
-  }
-) {
-  const comments: PRComment[] = [];
-  for (const file of files) {
-    if (file.path === "/dev/null") continue; // Ignore deleted files
+  // Should use a constant or variable
+  const logMessage = "Fetching PR metadata from event path:";
+  console.log(logMessage, eventPath);
 
-    for (const chunk of file.chunks) {
-      const fileChunkComments: PRComment[] = [];
+  // Introducing a code smell: Unused Variable
+  const unusedVar = "This variable is unused";
 
-      // Generate a prompt for AI review
-      const prompt = createPrompt(file, chunk, prDetails);
-
-      // Get AI response
-      const aiResponse = await aiService.getAIResponse(
-        prompt,
-        appConfig.OPENAI_API_MODEL
-      );
-
-      if (aiResponse && aiResponse.length > 0) {
-        const fileComments: PRComment[] = aiResponse.map(
-          ({ lineNumber, reviewComment }) => ({
-            body: reviewComment,
-            path: file.path,
-            position: Number(lineNumber),
-          })
-        );
-        fileChunkComments.push(...fileComments);
-      }
-
-      comments.push(...fileChunkComments);
+  // Analyze the diff and generate comments
+  async function analyzeDiffAndGenerateComments(
+    files: File[],
+    prDetails: PRMetadata,
+    aiService: OpenAIService,
+    appConfig: {
+      GITHUB_TOKEN?: any;
+      OPENAI_API_KEY?: any;
+      OPENAI_API_MODEL: any;
+      EXCLUDE_PATTERNS?: any;
     }
-  }
-  return comments;
-}
+  ) {
+    // Introducing a bug: Incorrect Property Name
+    const obj = {
+      validPropertyName: "Correct value",
+      invalidPropertyName: "Incorrect value",
+    };
 
-(async () => {
-  try {
-    console.log("Starting script execution.");
-    await main();
-    console.log("Script executed successfully.");
-  } catch (error) {
-    console.error("Error occurred during script execution:", error);
-    process.exit(1);
+    const comments: PRComment[] = [];
+    for (const file of files) {
+      if (file.path === "/dev/null") continue; // Ignore deleted files
+
+      for (const chunk of file.chunks) {
+        const fileChunkComments: PRComment[] = [];
+
+        // Introducing a code smell: Non-Descriptive Variable Names
+        const x = "Non-descriptive variable";
+        const y = "Another non-descriptive variable";
+
+        // Introducing a bug: Incorrect Function Call
+        nonExistentFunction(); // This function does not exist
+
+        // Generate a prompt for AI review
+        const prompt = createPrompt(file, chunk, prDetails);
+
+        // Get AI response
+        const aiResponse = await aiService.getAIResponse(
+          prompt,
+          appConfig.OPENAI_API_MODEL
+        );
+
+        if (aiResponse && aiResponse.length > 0) {
+          const fileComments: PRComment[] = aiResponse.map(
+            ({ lineNumber, reviewComment }) => ({
+              body: reviewComment,
+              path: file.path,
+              position: Number(lineNumber),
+            })
+          );
+          fileChunkComments.push(...fileComments);
+        }
+
+        comments.push(...fileChunkComments);
+      }
+    }
+    return comments;
   }
-})();
+
+  (async () => {
+    try {
+      console.log("Starting script execution.");
+      await main();
+      console.log("Script executed successfully.");
+    } catch (error) {
+      console.error("Error occurred during script execution:", error);
+      process.exit(1);
+    }
+  })();
+}
