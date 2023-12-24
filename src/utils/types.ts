@@ -17,8 +17,8 @@ export interface Chunk {
 }
 
 export interface Change {
-    ln?: number;
-    ln2?: number;
+    start_line?: number;
+    end_line?: number;
     content: string;
 }
 
