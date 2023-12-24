@@ -21,12 +21,6 @@ export class GitHubService {
         throw new Error("Invalid event data. Repository or PR number is missing.");
       }
 
-      const prResponse = await this.octokit.pulls.get({
-        owner: repository.owner.login,
-        repo: repository.name,
-        pull_number: number,
-      });
-
       return {
         owner: repository.owner.login,
         repo: repository.name,
