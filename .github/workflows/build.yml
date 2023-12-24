@@ -19,11 +19,11 @@ jobs:
         run: npm run build
 
       - name: Commit and push dist directory
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} 
         run: |
           git config --global user.name 'suitedaces'
           git config --global user.email 'ishannagpal554@gmail.com'
           git add dist/ -f
           git commit -m 'Update dist directory'
-          git push
-          fi
-        shell: /usr/bin/bash -e {0}
+          git -c http.extraHeader="AUTHORIZATION: basic $(echo -n x-access-token:${GITHUB_TOKEN} | base64)" push
