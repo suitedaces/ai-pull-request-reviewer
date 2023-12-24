@@ -19,7 +19,7 @@ jobs:
         run: npm ci
 
       - name: Build TypeScript
-        run: npm run build
+        run: npm run package
 
       - name: Commit and push dist directory
         env:
