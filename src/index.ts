@@ -117,7 +117,7 @@ async function analyzeDiffAndGenerateComments(
           ({ lineNumber, reviewComment }) => ({
             body: reviewComment,
             path: file.path,
-            line: Number(lineNumber),
+            position: Number(lineNumber),
           })
         );
         fileChunkComments.push(...fileComments);

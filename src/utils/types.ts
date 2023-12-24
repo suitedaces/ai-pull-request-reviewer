@@ -25,5 +25,5 @@ export interface Change {
 export interface PRComment {
     body: string;
     path: string;
-    line: number;
+    position: number;
 }
