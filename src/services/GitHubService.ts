@@ -16,10 +16,12 @@ export class GitHubService {
     try {
       const event = JSON.parse(readFileSync(eventPath, "utf8"));
       
-      
       const repository = event.repository;
+
       console.log('\nRepository: ', repository)
+
       const number = event.number;
+
       if (!repository || typeof number !== 'number') {
         throw new Error("Invalid event data. Repository or PR number is missing.");
       }
@@ -29,7 +31,7 @@ export class GitHubService {
         repo: repository.name,
         pull_number: number,
       });
-      
+
       console.log('\nPR Response: ', prResponse)
 
       return {
