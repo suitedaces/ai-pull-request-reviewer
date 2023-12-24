@@ -1,5 +1,5 @@
 import { Octokit } from "@octokit/rest";
-import { PRMetadata } from "../utils/types";
+import { PRMetadata, PRComment } from '../utils/types';
 import { readFileSync } from "fs";
 
 export class GitHubService {
@@ -68,7 +68,7 @@ export class GitHubService {
     owner: string,
     repo: string,
     pull_number: number,
-    comments: Array<{ body: string; path: string; line: number }>
+    comments: PRComment[]
   ): Promise<void> {
     try {
       await this.octokit.pulls.createReview({
@@ -80,6 +80,7 @@ export class GitHubService {
       });
     } catch (error) {
       console.error(`Error creating review comment for PR #${pull_number} for ${owner}/${repo}:`, error);
+      console.error('Comments: ', comments)
       throw error;
     }
   }
