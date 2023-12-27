@@ -42,8 +42,9 @@ export function createPRCommentResponsePrompt(prDetails: PRMetadata, discussionT
 
         Reply to Comment by ${commenterName}: "${triggeringComment}"
 
-        Based on the provided discussion context and the specific query in the triggering comment, generate a suitable response that addresses ${commenterName}'s concerns or questions in JSON format.
-    `;
+        Based on the provided discussion context and the specific query in the triggering comment, generate a suitable response that addresses ${commenterName}'s concerns or questions. 
+        Start your reply with "@${commenterName}" to make sure they get notified of your response.
+        `;
 
     console.log("Prompt: ", prompt);
     return prompt;

@@ -17,15 +17,11 @@ export class PRCommentHandler {
         // Fetch PR metadata
         const prDetails: PRMetadata = await this.gitHubService.getPRMetadata(eventPayload);
         const comment: PRCommentEvent = eventPayload.comment;
-
-        // TODO: remove
-        await this.gitHubService.addReactionToComment(prDetails.owner, prDetails.repo, comment.id, 'laugh');
         
         // Check if Dexter is mentioned in the comment, if not then skip
         if (!comment.body?.includes('dexter')) {
             console.log('Dexter not mentioned, skipping response...');
             return;
-
         }
         
         if (!comment.user) {
@@ -33,7 +29,7 @@ export class PRCommentHandler {
             return;
         }
         
-        // Add reaction to the comment
+        // Add "seen" reaction to the comment
         await this.gitHubService.addReactionToComment(prDetails.owner, prDetails.repo, comment.id, 'eyes');
         
         // Fetch PR diff
@@ -55,6 +51,10 @@ export class PRCommentHandler {
         const replyMessage = aiResponse || `Sorry, can't help you with that, ${comment.user?.login} (blame OpenAI!) 😭`;
 
         // Reply to the comment in the PR
-        await this.gitHubService.createReviewCommentReply(prDetails.owner, prDetails.repo, prDetails.pull_number, comment.id, replyMessage);
+        await this.gitHubService.createComment(prDetails.owner, prDetails.repo, comment.id, replyMessage);
+
+        // Undo "seen" and add "rocket" reactions to the comment
+        await this.gitHubService.addReactionToComment(prDetails.owner, prDetails.repo, comment.id, 'eyes');
+        await this.gitHubService.addReactionToComment(prDetails.owner, prDetails.repo, comment.id, 'rocket');
     }
 }

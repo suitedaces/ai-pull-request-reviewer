@@ -12,4 +12,3 @@ export function filterFiles(files: File[], excludePatterns: string) {
     );
   });
 }
-

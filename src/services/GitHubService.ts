@@ -127,8 +127,8 @@ export class GitHubService {
             owner,
             repo,
             pull_number,
-            comment_id,
-            body
+            body,
+            comment_id
         });
     } catch (error) {
         console.error(`Error replying to review comment ${comment_id} in PR #${pull_number}:`, error);
@@ -152,6 +152,26 @@ async addReactionToComment(
     } catch (error) {
       console.error(`Failed to add reaction to comment: ${error}`);
     }
+  }
+
+  async createComment(
+    owner: string,
+    repo: string,
+    pull_number: number,
+    comment: string
+  ): Promise<void> {
+    try {
+      await this.octokit.issues.createComment({
+        owner,
+        repo,
+        issue_number: pull_number,
+        body: comment,
+      });
+    } catch (error) {
+      console.error(`Error creating comment for PR #${pull_number}:`, error);
+      throw error;
+    }
+  
   }
 
   async labelPullRequest(owner: string, repo: string, pull_number: number, labels: string[]): Promise<void> {
