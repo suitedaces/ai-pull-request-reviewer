@@ -13,10 +13,10 @@ export class PRCommentHandler {
         }
     ) {}
 
-    async handleCommentEvent(eventPayload: string): Promise<void> {
+    async handleCommentEvent(eventPayload: any): Promise<void> {
         // Fetch PR metadata
         const prDetails: PRMetadata = await this.gitHubService.getPRMetadata(eventPayload);
-        const comment: PRCommentEvent = JSON.parse(eventPayload).comment;
+        const comment: PRCommentEvent = eventPayload.comment;
 
         // TODO: remove
         await this.gitHubService.addReactionToComment(prDetails.owner, prDetails.repo, comment.id, 'laugh');

@@ -12,12 +12,12 @@ export class GitHubService {
     this.octokit = new Octokit({ auth: token });
   }
 
-  async getPRMetadata(eventPayload: string): Promise<PRMetadata> {
+  async getPRMetadata(eventPayload: any): Promise<PRMetadata> {
 
     try {
-      const event = JSON.parse(eventPayload);
+      const event = eventPayload;
       const repository = event.repository;
-      const pullNumber = event.pull_request.number; // Renamed from 'number' to 'pullNumber'
+      const pullNumber = event.pull_request.number; 
   
       if (!repository || typeof pullNumber !== 'number') {
         throw new Error("Invalid event data. Repository or PR number is missing.");
