@@ -26,6 +26,7 @@ const event = {
             // Handle pull request events
             await prHandler.handlePullRequest(event.payload);
         } else if (event.eventName === 'issue_comment') {
+           // Handle PR comment events
             await prCommentHandler.handleCommentEvent(event.payload);
         }
 

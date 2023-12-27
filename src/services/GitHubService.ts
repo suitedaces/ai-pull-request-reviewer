@@ -1,5 +1,5 @@
 import { Octokit } from "@octokit/rest";
-import { PRMetadata, PRComment } from '../utils/types';
+import { PRMetadata, PRCommentEvent, PRCommentRequest } from '../utils/types';
 import { readFileSync } from "fs";
 
 export class GitHubService {
@@ -15,40 +15,51 @@ export class GitHubService {
   async getPRMetadata(eventPath: string): Promise<PRMetadata> {
     try {
       const event = JSON.parse(readFileSync(eventPath, "utf8"));
-      
       const repository = event.repository;
-
-      console.log('\nRepository: ', repository)
-
-      const number = event.number;
-
-      if (!repository || typeof number !== 'number') {
+      const pullNumber = event.pull_request.number; // Renamed from 'number' to 'pullNumber'
+  
+      if (!repository || typeof pullNumber !== 'number') {
         throw new Error("Invalid event data. Repository or PR number is missing.");
       }
-      
+  
+      // Fetch PR details
       const prResponse = await this.octokit.pulls.get({
         owner: repository.owner.login,
         repo: repository.name,
-        pull_number: number,
+        pull_number: pullNumber,
       });
-
-      console.log('\nPR Response: ', prResponse)
-
+  
+      // Fetch PR comments
+      const commentsResponse = await this.octokit.issues.listComments({
+        owner: repository.owner.login,
+        repo: repository.name,
+        issue_number: pullNumber,
+      });
+  
+      // Map comments to PRComment format
+      const comments: PRCommentEvent[] = commentsResponse.data.map(comment => ({
+        body: comment.body ? comment.body : "",
+        user: comment.user ? { login: comment.user.login, id: comment.user.id } : undefined,
+        id: comment.id,
+      }));
+  
       return {
         owner: repository.owner.login,
         repo: repository.name,
-        pull_number: number,
+        pull_number: pullNumber,
         title: prResponse.data.title ?? "",
-        description: prResponse.data.body ?? ""
-      };
-
+        description: prResponse.data.body ?? "",
+        comments: comments ? comments : [], 
+      }
+  
     } catch (error) {
       console.error("Error fetching PR details:", error);
       throw error;
     }
   }
+  
 
-      async getPRComments(owner: string, repo: string, pull_number: number): Promise<string> {
+  async getPRComments(owner: string, repo: string, pull_number: number): Promise<string> {
       try {
         const comments = await this.octokit.issues.listComments({
           owner,
@@ -60,7 +71,7 @@ export class GitHubService {
         console.error(`Error fetching comments for PR #${pull_number}:`, error);
         throw error;
       }
-    } 
+    }
 
   async getDiff(owner: string, repo: string, pull_number: number): Promise<string | null> {
     try {
@@ -81,7 +92,7 @@ export class GitHubService {
     owner: string,
     repo: string,
     pull_number: number,
-    comments: PRComment[]
+    comments: PRCommentRequest[]
   ): Promise<void> {
     try {
       await this.octokit.pulls.createReview({

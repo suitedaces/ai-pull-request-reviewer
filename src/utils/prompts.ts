@@ -13,7 +13,7 @@ export function createBasePrompt(prDetails: PRMetadata): string {
 export function createPRReviewPrompt(file: File, chunk: Chunk, prDetails: PRMetadata): string {
     const basePrompt = createBasePrompt(prDetails);
     const instructions = `Your current task is to give high quality comments on the Pull Request based on the instructions given. Respond in JSON format: {"reviews": [{"lineNumber": <line_number>, "reviewComment": "<review comment>"}]}. \n\n`;
-    const codeDiff = `Code to Review (File: ${file.path}): \n\`\`\`\ndiff ${chunk.content} ${chunk.changes.map(c => `${c.ln ? c.ln : c.ln2} ${c.content}`).join("\n")}\n\`\`\`\n\n`;
+    const codeDiff = `Code to Review (File: ${file.to}): \n\`\`\`\ndiff ${chunk.content} ${chunk.changes.map(c => `${c.ln ? c.ln : c.ln2} ${c.content}`).join("\n")}\n\`\`\`\n\n`;
     const prompt = `${basePrompt}${instructions}${codeDiff}`;
     console.log("Prompt: \n", prompt);
     return prompt;
@@ -26,7 +26,7 @@ export function createPRCommentResponsePrompt(prDetails: PRMetadata, discussionT
     
     for (const file of codeDiffs) {
         for (const chunk of file.chunks) {
-            const codeDiff = `Code to Review (File: ${file.path}): \n\`\`\`\ndiff ${chunk.content} ${chunk.changes.map(c => `${c.ln || c.ln2}: ${c.content}`).join("\n")}\n\`\`\`\n`;
+            const codeDiff = `Code to Review (File: ${file.to}): \n\`\`\`\ndiff ${chunk.content} ${chunk.changes.map(c => `${c.ln || c.ln2}: ${c.content}`).join("\n")}\n\`\`\`\n`;
             codeDiffContext += codeDiff + '\n';
         }
     }

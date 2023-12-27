@@ -1,7 +1,7 @@
 import { GitHubService } from '../services/GitHubService';
 import { OpenAIService } from '../services/OpenAIService';
 import { createPRCommentResponsePrompt } from '../utils/prompts';
-import { PRMetadata, File } from '../utils/types'; 
+import { PRMetadata, File, PRCommentEvent } from '../utils/types'; 
 import parseDiff from 'parse-diff';
 
 export class PRCommentHandler {
@@ -13,20 +13,26 @@ export class PRCommentHandler {
         }
     ) {}
 
-    async handleCommentEvent(eventPath: string): Promise<void> {
+    async handleCommentEvent(eventPayload: string): Promise<void> {
         // Fetch PR metadata
-        const prDetails: PRMetadata = await this.gitHubService.getPRMetadata(eventPath);
-        const comment = prDetails.comment;
+        const prDetails: PRMetadata = await this.gitHubService.getPRMetadata(eventPayload);
+        const comment: PRCommentEvent = JSON.parse(eventPayload).comment;
 
         // TODO: remove
         await this.gitHubService.addReactionToComment(prDetails.owner, prDetails.repo, comment.id, 'laugh');
         
         // Check if Dexter is mentioned in the comment, if not then skip
-        if (!comment.body.includes('Dexter','dexter','dexter-ai')) {
+        if (!comment.body?.includes('dexter')) {
             console.log('Dexter not mentioned, skipping response...');
             return;
-        }
 
+        }
+        
+        if (!comment.user) {
+            console.log('Comment user is undefined, skipping response...');
+            return;
+        }
+        
         // Add reaction to the comment
         await this.gitHubService.addReactionToComment(prDetails.owner, prDetails.repo, comment.id, 'eyes');
         
@@ -46,7 +52,7 @@ export class PRCommentHandler {
         const aiResponse = await this.aiService.getAIPullRequestCommentResponse(prompt, this.appConfig.OPENAI_API_MODEL);
 
         // Process AI response and create a comment reply
-        const replyMessage = aiResponse || `Sorry, can't help you with that, ${comment.user.login} (blame OpenAI!) 😭`;
+        const replyMessage = aiResponse || `Sorry, can't help you with that, ${comment.user?.login} (blame OpenAI!) 😭`;
 
         // Reply to the comment in the PR
         await this.gitHubService.createReviewCommentReply(prDetails.owner, prDetails.repo, prDetails.pull_number, comment.id, replyMessage);

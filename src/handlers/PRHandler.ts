@@ -2,7 +2,7 @@
 
 import { GitHubService } from '../services/GitHubService';
 import { OpenAIService } from '../services/OpenAIService';
-import { PRMetadata, File, PRComment } from '../utils/types';
+import { PRMetadata, File, PRCommentRequest } from '../utils/types';
 import { filterFiles } from '../utils/utils';
 import { createPRReviewPrompt } from '../utils/prompts';
 import parseDiff from 'parse-diff';
@@ -50,13 +50,13 @@ export class PRHandler {
   }
 
   // TODO: Make this faster
-  private async analyzeDiffAndGenerateComments(files: File[], prDetails: PRMetadata): Promise<PRComment[]> {
-    const comments: PRComment[] = [];
+  private async analyzeDiffAndGenerateComments(files: File[], prDetails: PRMetadata): Promise<PRCommentRequest[]> {
+    const comments: PRCommentRequest[] = [];
     for (const file of files) {
       if (file.to === "/dev/null") continue; // Ignore deleted files
 
       for (const chunk of file.chunks) {
-        const fileChunkComments: PRComment[] = [];
+        const fileChunkComments: PRCommentRequest[] = [];
 
         // Generate a prompt for AI review
         const prompt = createPRReviewPrompt(file, chunk, prDetails);
@@ -68,7 +68,7 @@ export class PRHandler {
         );
 
         if (aiResponse && aiResponse.length > 0) {
-          const fileComments: PRComment[] = aiResponse.map(
+          const fileComments: PRCommentRequest[] = aiResponse.map(
             ({ lineNumber, reviewComment }) => ({
               body: reviewComment,
               path: file.to,

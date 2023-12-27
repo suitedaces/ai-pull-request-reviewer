@@ -4,7 +4,13 @@ export interface PRMetadata {
     pull_number: number;
     title: string;
     description: string;
-  }
+    comments?: PRCommentEvent[];
+}
+
+export interface GithubUser {
+    login: string;
+    id: number;
+}
   
 export interface File {
     to: string;
@@ -22,10 +28,14 @@ export interface Change {
     content: string;
 }
 
-export interface PRComment {
+export interface PRCommentRequest {
     body: string;
     path: string;
     position: number;
-    in_reply_to?: number;
-    comment_id?: number;
+}
+
+export interface PRCommentEvent {
+    body: string;
+    user?: GithubUser;
+    id: number;
 }
