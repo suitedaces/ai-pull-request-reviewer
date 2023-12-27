@@ -13,51 +13,56 @@ export class GitHubService {
   }
 
   async getPRMetadata(eventPayload: any): Promise<PRMetadata> {
-
     try {
-      const event = eventPayload;
-      const repository = event.repository;
-      const pullNumber = event.pull_request.number; 
-  
-      if (!repository || typeof pullNumber !== 'number') {
-        throw new Error("Invalid event data. Repository or PR number is missing.");
-      }
-  
-      // Fetch PR details
-      const prResponse = await this.octokit.pulls.get({
-        owner: repository.owner.login,
-        repo: repository.name,
-        pull_number: pullNumber,
-      });
-  
-      // Fetch PR comments
-      const commentsResponse = await this.octokit.issues.listComments({
-        owner: repository.owner.login,
-        repo: repository.name,
-        issue_number: pullNumber,
-      });
-  
-      // Map comments to PRComment format
-      const comments: PRCommentEvent[] = commentsResponse.data.map(comment => ({
-        body: comment.body ? comment.body : "",
-        user: comment.user ? { login: comment.user.login, id: comment.user.id } : undefined,
-        id: comment.id,
-      }));
-  
-      return {
-        owner: repository.owner.login,
-        repo: repository.name,
-        pull_number: pullNumber,
-        title: prResponse.data.title ?? "",
-        description: prResponse.data.body ?? "",
-        comments: comments ? comments : [], 
-      }
-  
+        // Directly use the eventPayload object
+        const event = eventPayload;
+
+        // Extract necessary information from the event payload
+        const repository = event.repository;
+        const issue = event.issue;
+
+        if (!repository || !issue || !issue.pull_request) {
+            throw new Error("Invalid event data. Repository or PR details are missing.");
+        }
+
+        const pullNumber = issue.number;
+
+        // Fetch additional PR details if needed
+        const prResponse = await this.octokit.pulls.get({
+            owner: repository.owner.login,
+            repo: repository.name,
+            pull_number: pullNumber,
+        });
+
+        // Fetch PR comments
+        const commentsResponse = await this.octokit.issues.listComments({
+            owner: repository.owner.login,
+            repo: repository.name,
+            issue_number: pullNumber,
+        });
+
+        // Map comments to PRComment format
+        const comments: PRCommentEvent[] = commentsResponse.data.map(comment => ({
+            body: comment.body ? comment.body : "",
+            user: comment.user ? { login: comment.user.login, id: comment.user.id } : undefined,
+            id: comment.id,
+        }));
+
+        return {
+            owner: repository.owner.login,
+            repo: repository.name,
+            pull_number: pullNumber,
+            title: prResponse.data.title ?? "",
+            description: prResponse.data.body ?? "",
+            comments: comments ? comments : [], 
+        }
+
     } catch (error) {
-      console.error("Error fetching PR details:", error);
-      throw error;
+        console.error("Error fetching PR details:", error);
+        throw error;
     }
-  }
+}
+
   
 
   async getPRComments(owner: string, repo: string, pull_number: number): Promise<string> {
