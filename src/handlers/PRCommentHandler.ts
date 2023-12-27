@@ -18,9 +18,20 @@ export class PRCommentHandler {
         // Read event data
         const event = JSON.parse(readFileSync(eventPath, 'utf8'));
         const { pull_request: pr, comment } = event;
+        
+        // TODO: remove
+        await this.gitHubService.addReactionToComment(pr.base.repo.owner.login, pr.base.repo.name, comment.id, 'laugh');
+        
+        // Check if Dexter is mentioned in the comment, if not then skip
+        if (!comment.body.includes('Dexter','dexter','dexter-ai')) {
+            console.log('Dexter not mentioned, skipping response...');
+            return;
+        }
 
         // Add reaction to the comment
         await this.gitHubService.addReactionToComment(pr.base.repo.owner.login, pr.base.repo.name, comment.id, 'eyes');
+        
+
 
         // Fetch PR metadata and diff
         const prDetails: PRMetadata = await this.gitHubService.getPRMetadata(eventPath);
@@ -36,10 +47,10 @@ export class PRCommentHandler {
         const prompt = createPRCommentResponsePrompt(prDetails, discussionThread, comment.body, comment.user.login, diffFiles)
 
         // Get AI response for the comment
-        const aiResponse = await this.aiService.getAIPullRequestResponse(prompt, this.appConfig.OPENAI_API_MODEL);
+        const aiResponse = await this.aiService.getAIPullRequestCommentResponse(prompt, this.appConfig.OPENAI_API_MODEL);
 
         // Process AI response and create a comment reply
-        const replyMessage = aiResponse?.[0]?.reviewComment || `Sorry, can't help you with that, ${comment.user.login}! 😭`;
+        const replyMessage = aiResponse || `Sorry, can't help you with that, ${comment.user.login} (blame OpenAI!) 😭`;
 
         // Reply to the comment in the PR
         await this.gitHubService.createReviewCommentReply(prDetails.owner, prDetails.repo, prDetails.pull_number, comment.id, replyMessage);

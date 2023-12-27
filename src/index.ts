@@ -9,7 +9,7 @@ const githubService = new GitHubService(appConfig.GITHUB_TOKEN);
 const aiService = new OpenAIService(appConfig.OPENAI_API_KEY);
 
 const prHandler = new PRHandler(githubService, aiService, appConfig);
-const prCommentHandler = new PRCommentHandler(githubService);
+const prCommentHandler = new PRCommentHandler(githubService, aiService, appConfig);
 
 // Example event data structure
 const event = {

@@ -23,25 +23,28 @@ export function createPRReviewPrompt(file: File, chunk: Chunk, prDetails: PRMeta
 export function createPRCommentResponsePrompt(prDetails: PRMetadata, discussionThread: string, triggeringComment: string, commenterName: string, codeDiffs: File[]): string {
     const basePrompt = createBasePrompt(prDetails);
     let codeDiffContext = '';
-    for (const { filePath, chunk } of codeDiffs) {
-        const codeDiff = `Code to Review (File: ${file.path}): \n\`\`\`\ndiff ${chunk.content} ${chunk.changes.map(c => `${c.ln ? c.ln : c.ln2} ${c.content}`).join("\n")}\n\`\`\`\n`;
-        codeDiffContext += codeDiff + '\n';
+    
+    for (const file of codeDiffs) {
+        for (const chunk of file.chunks) {
+            const codeDiff = `Code to Review (File: ${file.path}): \n\`\`\`\ndiff ${chunk.content} ${chunk.changes.map(c => `${c.ln || c.ln2}: ${c.content}`).join("\n")}\n\`\`\`\n`;
+            codeDiffContext += codeDiff + '\n';
+        }
     }
 
     const prompt = `${basePrompt}
-        Task: Respond to a comment in a pull request with a suitable reply
+        Task: Respond to a comment in a pull request adhering to the instructions given to you.
 
-        Code diff in the pull request: ${codeDiffContext}
+        Code diff in the pull request:
+        ${codeDiffContext}
 
         Discussion Thread:
         ${discussionThread}
 
         Reply to Comment by ${commenterName}: "${triggeringComment}"
 
-        Based on the provided discussion context and the specific query in the triggering comment, generate a suitable response that addresses ${commenterName}'s concerns or questions in EXACTLY this JSON
+        Based on the provided discussion context and the specific query in the triggering comment, generate a suitable response that addresses ${commenterName}'s concerns or questions in JSON format.
     `;
 
     console.log("Prompt: ", prompt);
-
     return prompt;
 }
