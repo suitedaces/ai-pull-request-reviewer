@@ -3,7 +3,9 @@ name: Dexter AI Code Review Workflow
 on:
   pull_request:
     types: [opened, synchronize, reopened]
-
+  issue_comment:
+    types: [created]
+  
 permissions: write-all
 
 jobs:
