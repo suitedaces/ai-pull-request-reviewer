@@ -20,7 +20,8 @@ const event = {
 (async () => {
     try {
         console.log("Starting event processing...");
-
+        console.log("Event name:\n", event.eventName);
+        console.log("Event payload:\n", event.payload);
         if (event.eventName === 'pull_request') {
             // Handle pull request events
             await prHandler.handlePullRequest(event.payload);
