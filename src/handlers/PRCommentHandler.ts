@@ -51,7 +51,7 @@ export class PRCommentHandler {
         const replyMessage = aiResponse || `Sorry, can't help you with that, ${comment.user?.login} (blame OpenAI!) 😭`;
 
         // Reply to the comment in the PR
-        await this.gitHubService.createComment(prDetails.owner, prDetails.repo, comment.id, replyMessage);
+        await this.gitHubService.createComment(prDetails.owner, prDetails.repo, prDetails.pull_number, replyMessage);
 
         // Undo "seen" and add "rocket" reactions to the comment
         await this.gitHubService.addReactionToComment(prDetails.owner, prDetails.repo, comment.id, 'eyes');
