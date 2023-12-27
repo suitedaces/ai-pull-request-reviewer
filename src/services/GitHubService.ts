@@ -47,7 +47,20 @@ export class GitHubService {
       throw error;
     }
   }
-  
+
+      async getPRComments(owner: string, repo: string, pull_number: number): Promise<string> {
+      try {
+        const comments = await this.octokit.issues.listComments({
+          owner,
+          repo,
+          issue_number: pull_number,
+        });
+        return comments.data.map(comment => `${comment.user?.login}: ${comment.body}`).join('\n');
+      } catch (error) {
+        console.error(`Error fetching comments for PR #${pull_number}:`, error);
+        throw error;
+      }
+    } 
 
   async getDiff(owner: string, repo: string, pull_number: number): Promise<string | null> {
     try {
@@ -85,17 +98,56 @@ export class GitHubService {
     }
   }
 
-//   async labelPullRequest(owner: string, repo: string, pull_number: number, labels: string[]): Promise<void> {
-//     try {
-//       await this.octokit.issues.addLabels({
-//         owner,
-//         repo,
-//         issue_number: pull_number,
-//         labels,
-//       });
-//     } catch (error) {
-//       console.error(`Error adding labels to PR #${pull_number}:`, error);
-//       throw error;
-//     }
-//   }
+  async createReviewCommentReply(
+    owner: string, 
+    repo: string, 
+    pull_number: number, 
+    comment_id: number, 
+    body: string
+): Promise<void> {
+    try {
+        await this.octokit.pulls.createReplyForReviewComment({
+            owner,
+            repo,
+            pull_number,
+            comment_id,
+            body
+        });
+    } catch (error) {
+        console.error(`Error replying to review comment ${comment_id} in PR #${pull_number}:`, error);
+        throw error;
+    }
+}
+
+async addReactionToComment(
+  owner: string,
+  repo: string,
+  commentId: number, 
+  reaction: string
+    ): Promise<void> {
+    try {
+      await this.octokit.reactions.createForIssueComment({
+        owner,
+        repo,
+        comment_id: commentId,
+        content: reaction as "+1" | "-1" | "laugh" | "confused" | "heart" | "hooray" | "rocket" | "eyes"
+      });
+    } catch (error) {
+      console.error(`Failed to add reaction to comment: ${error}`);
+    }
+  }
+
+  async labelPullRequest(owner: string, repo: string, pull_number: number, labels: string[]): Promise<void> {
+    try {
+      await this.octokit.issues.addLabels({
+        owner,
+        repo,
+        issue_number: pull_number,
+        labels,
+      });
+    } catch (error) {
+      console.error(`Error adding labels to PR #${pull_number}:`, error);
+      throw error;
+    }
+  }
 }

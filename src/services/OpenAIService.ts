@@ -7,7 +7,7 @@ export class OpenAIService {
     this.openai = new OpenAI({ apiKey });
   }
 
-  async getAIResponse(prompt: string, model: string): Promise<Array<{ lineNumber: string; reviewComment: string; }> | null> {
+  async getAIPullRequestResponse(prompt: string, model: string): Promise<Array<{ lineNumber: string; reviewComment: string; }> | null> {
     const queryConfig = {
       model,
       temperature: 0.3,
