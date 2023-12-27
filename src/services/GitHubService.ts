@@ -12,9 +12,10 @@ export class GitHubService {
     this.octokit = new Octokit({ auth: token });
   }
 
-  async getPRMetadata(eventPath: string): Promise<PRMetadata> {
+  async getPRMetadata(eventPayload: string): Promise<PRMetadata> {
+
     try {
-      const event = JSON.parse(readFileSync(eventPath, "utf8"));
+      const event = JSON.parse(eventPayload);
       const repository = event.repository;
       const pullNumber = event.pull_request.number; // Renamed from 'number' to 'pullNumber'
   
