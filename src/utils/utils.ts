@@ -1,21 +1,15 @@
-import { File, Chunk, PRMetadata } from "./types";
+import { minimatch } from "minimatch";
+import { File } from "./types";
 
-export function createPrompt(file: File, chunk: Chunk, prDetails: PRMetadata): string {
-  // Instructions for AI Review Process
-  const instructions = `Respond in JSON format: {"reviews": [{"lineNumber": <line_number>, "reviewComment": "<review comment>"}]}. 
-                        Provide only constructive feedback in the reviewComment after reviewing the code for security vulnerabilities and adherence to coding best practices for the given language.
-                        Make recommendations to make code more secure,faster easier to maintain, reduce redundancy.
-                        If no improvements are necessary, keep the "reviews" array empty. 
-                        Use GitHub Markdown format for comments. 
-                        Focus your review solely on the provided code, considering the PR context for holistic understanding. 
-                        Avoid suggesting the addition of code comments.`;
+export function filterFiles(files: File[], excludePatterns: string) {
+  // Split into an array of patterns
+  const patterns = excludePatterns.split(",").map((pattern) => pattern.trim());
 
-  const prContext = `Review Context: Pull Request Title - '${prDetails.title}'. Description: ${prDetails.description}`;
-
-  const codeDiff = `Code to Review (File: ${file.path}): \n \`\`\` \ndiff ${chunk.content} ${chunk.changes.map(c => `${c.ln ? c.ln : c.ln2} ${c.content}`).join("\n")} \`\`\`\n`;
-
-  const prompt = `Review Task: ${instructions} \n Context: ${prContext} \n Code Diff: ${codeDiff}`;
-  console.log("Prompt: ", prompt)
-  return prompt;
+  // Return files that do not match any of the patterns
+  return files.filter((file) => {
+    return !patterns.some((pattern) =>
+      minimatch(file.path ?? "", pattern)
+    );
+  });
 }
 

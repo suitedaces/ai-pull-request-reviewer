@@ -26,4 +26,6 @@ export interface PRComment {
     body: string;
     path: string;
     position: number;
+    in_reply_to?: number;
+    comment_id?: number;
 }
