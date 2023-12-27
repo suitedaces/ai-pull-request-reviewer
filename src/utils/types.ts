@@ -7,7 +7,7 @@ export interface PRMetadata {
   }
   
 export interface File {
-    path: string;
+    to: string;
     chunks: Chunk[];
 }
 

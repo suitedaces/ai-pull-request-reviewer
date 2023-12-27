@@ -8,7 +8,7 @@ export function filterFiles(files: File[], excludePatterns: string) {
   // Return files that do not match any of the patterns
   return files.filter((file) => {
     return !patterns.some((pattern) =>
-      minimatch(file.path ?? "", pattern)
+      minimatch(file.to ?? "", pattern)
     );
   });
 }

@@ -25,7 +25,7 @@ export class PRHandler {
     const prDiff = await this.githubService.getDiff(prDetails.owner, prDetails.repo, prDetails.pull_number);
 
     const diffFiles: File[] = parseDiff(prDiff).map((file) => ({
-      path: file.to ?? "",
+      to: file.to ?? "",
       chunks: file.chunks ?? [],
     }));
 
@@ -53,7 +53,7 @@ export class PRHandler {
   private async analyzeDiffAndGenerateComments(files: File[], prDetails: PRMetadata): Promise<PRComment[]> {
     const comments: PRComment[] = [];
     for (const file of files) {
-      if (file.path === "/dev/null") continue; // Ignore deleted files
+      if (file.to === "/dev/null") continue; // Ignore deleted files
 
       for (const chunk of file.chunks) {
         const fileChunkComments: PRComment[] = [];
@@ -71,7 +71,7 @@ export class PRHandler {
           const fileComments: PRComment[] = aiResponse.map(
             ({ lineNumber, reviewComment }) => ({
               body: reviewComment,
-              path: file.path,
+              path: file.to,
               position: Number(lineNumber),
             })
           );
