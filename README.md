@@ -2,9 +2,6 @@
 
 **For Developers, By Developers** 🛠️: Dexter AI enhances code reviews with an AI-powered approach, tailored to the needs of developers.
 
-![image](https://github.com/suitedaces/dexter-ai/assets/50865782/d06ce423-9f21-463f-a634-de55d072abeb)
-
-
 ## Key Features of Dexter AI 🌟
 
 - **AI-Powered PR Reviews** 🤖: Automated, insightful analysis to streamline code reviews.
@@ -12,6 +9,8 @@
 - **Multilingual Code Support** 🌐: Broad compatibility with various programming languages.
 - **Seamless GitHub Integration** 🔗: Smooth integration into GitHub workflows.
 - **Security Vulnerability Detection** 🔐: Proactively identifies potential security risks.
+
+![image](https://github.com/suitedaces/dexter-ai/assets/50865782/d06ce423-9f21-463f-a634-de55d072abeb)
 
 ## Getting Started
 
