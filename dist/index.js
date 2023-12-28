@@ -39028,7 +39028,7 @@ exports.getConfig = getConfig;
 
 /***/ }),
 
-/***/ 6144:
+/***/ 381:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
 "use strict";
@@ -39037,98 +39037,130 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-const GitHubService_1 = __nccwpck_require__(4486);
-const OpenAIService_1 = __nccwpck_require__(9402);
-const utils_1 = __nccwpck_require__(239);
-const config_1 = __nccwpck_require__(4561);
-const minimatch_1 = __nccwpck_require__(1953);
+exports.PRCommentHandler = void 0;
+const prompts_1 = __nccwpck_require__(9318);
 const parse_diff_1 = __importDefault(__nccwpck_require__(4833));
-async function main() {
-    try {
-        const appConfig = (0, config_1.getConfig)();
-        const githubService = new GitHubService_1.GitHubService(appConfig.GITHUB_TOKEN);
-        const aiService = new OpenAIService_1.OpenAIService(appConfig.OPENAI_API_KEY);
+class PRCommentHandler {
+    gitHubService;
+    aiService;
+    appConfig;
+    constructor(gitHubService, aiService, appConfig) {
+        this.gitHubService = gitHubService;
+        this.aiService = aiService;
+        this.appConfig = appConfig;
+    }
+    async handleCommentEvent(eventPayload) {
         // Fetch PR metadata
-        const prDetails = await fetchPRMetadata(githubService);
+        const prDetails = await this.gitHubService.getPRMetadata(eventPayload);
+        const comment = eventPayload.comment;
+        // Check if Dexter is mentioned in the comment, if not then skip
+        if (!comment.body?.includes('dexter')) {
+            console.log('Dexter not mentioned, skipping response...');
+            return;
+        }
+        if (!comment.user) {
+            console.log('Comment user is undefined, skipping response...');
+            return;
+        }
+        // Add "seen" reaction to the comment
+        await this.gitHubService.addReactionToComment(prDetails.owner, prDetails.repo, comment.id, 'eyes');
         // Fetch PR diff
-        const prDiff = await fetchPRDiff(githubService, prDetails);
+        const prDiff = await this.gitHubService.getDiff(prDetails.owner, prDetails.repo, prDetails.pull_number);
+        const discussionThread = await this.gitHubService.getPRComments(prDetails.owner, prDetails.repo, prDetails.pull_number);
+        // Parse the diff to get file and chunk info
         const diffFiles = (0, parse_diff_1.default)(prDiff).map((file) => ({
-            path: file.to ?? "",
+            to: file.to ?? "",
+            chunks: file.chunks ?? [],
+        }));
+        const prompt = (0, prompts_1.createPRCommentResponsePrompt)(prDetails, discussionThread, comment.body, comment.user.login, diffFiles);
+        // Get AI response for the comment
+        const aiResponse = await this.aiService.getAIPullRequestCommentResponse(prompt, this.appConfig.OPENAI_API_MODEL);
+        // Process AI response and create a comment reply
+        const replyMessage = aiResponse || `Sorry, can't help you with that, ${comment.user?.login} (blame OpenAI!) 😭`;
+        // Reply to the comment in the PR
+        await this.gitHubService.createComment(prDetails.owner, prDetails.repo, prDetails.pull_number, replyMessage);
+        // Undo "seen" and add "rocket" reactions to the comment
+        await this.gitHubService.addReactionToComment(prDetails.owner, prDetails.repo, comment.id, 'eyes');
+        await this.gitHubService.addReactionToComment(prDetails.owner, prDetails.repo, comment.id, 'rocket');
+    }
+}
+exports.PRCommentHandler = PRCommentHandler;
+
+
+/***/ }),
+
+/***/ 3359:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+// src/handlers/PRHandler.ts
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.PRHandler = void 0;
+const utils_1 = __nccwpck_require__(239);
+const prompts_1 = __nccwpck_require__(9318);
+const parse_diff_1 = __importDefault(__nccwpck_require__(4833));
+class PRHandler {
+    githubService;
+    aiService;
+    appConfig;
+    constructor(githubService, aiService, appConfig) {
+        this.githubService = githubService;
+        this.aiService = aiService;
+        this.appConfig = appConfig;
+    }
+    async handlePullRequest(eventPath) {
+        // Fetch PR metadata
+        const prDetails = await this.githubService.getPRMetadata(eventPath);
+        // Fetch PR diff
+        const prDiff = await this.githubService.getDiff(prDetails.owner, prDetails.repo, prDetails.pull_number);
+        const diffFiles = (0, parse_diff_1.default)(prDiff).map((file) => ({
+            to: file.to ?? "",
             chunks: file.chunks ?? [],
         }));
         // Filter files based on excluded patterns
-        const filteredFiles = filterFiles(diffFiles, appConfig.EXCLUDE_PATTERNS);
+        const filteredFiles = (0, utils_1.filterFiles)(diffFiles, this.appConfig.EXCLUDE_PATTERNS);
         // Analyze the diff and generate comments
-        const reviewComments = await analyzeDiffAndGenerateComments(filteredFiles, prDetails, aiService, appConfig);
+        const reviewComments = await this.analyzeDiffAndGenerateComments(filteredFiles, prDetails);
         if (reviewComments.length > 0) {
             // Create review comments on the pull request
-            await githubService.createReviewComment(prDetails.owner, prDetails.repo, prDetails.pull_number, reviewComments);
+            await this.githubService.createReviewComment(prDetails.owner, prDetails.repo, prDetails.pull_number, reviewComments);
             console.log(`Posted ${reviewComments.length} comments on the pull request.`);
         }
         else {
             console.log("No review comments to post.");
         }
     }
-    catch (error) {
-        console.error("Error processing the pull request:", error);
-        process.exit(1);
-    }
-}
-async function fetchPRMetadata(githubService) {
-    const eventPath = process.env.GITHUB_EVENT_PATH ?? "";
-    if (!eventPath) {
-        throw new Error("GitHub event path is not available.");
-    }
-    console.log("Fetching PR metadata from event path:", eventPath);
-    return await githubService.getPRMetadata(eventPath);
-}
-async function fetchPRDiff(githubService, prDetails) {
-    return await githubService.getDiff(prDetails.owner, prDetails.repo, prDetails.pull_number);
-}
-function filterFiles(files, excludePatterns) {
-    // Split into an array of patterns
-    const patterns = excludePatterns.split(",").map((pattern) => pattern.trim());
-    // Return files that do not match any of the patterns
-    return files.filter((file) => {
-        return !patterns.some((pattern) => (0, minimatch_1.minimatch)(file.path ?? "", pattern));
-    });
-}
-// Analyze the diff and generate comments
-async function analyzeDiffAndGenerateComments(files, prDetails, aiService, appConfig) {
-    const comments = [];
-    for (const file of files) {
-        if (file.path === "/dev/null")
-            continue; // Ignore deleted files
-        for (const chunk of file.chunks) {
-            const fileChunkComments = [];
-            // Generate a prompt for AI review
-            const prompt = (0, utils_1.createPrompt)(file, chunk, prDetails);
-            // Get AI response
-            const aiResponse = await aiService.getAIResponse(prompt, appConfig.OPENAI_API_MODEL);
-            if (aiResponse && aiResponse.length > 0) {
-                const fileComments = aiResponse.map(({ lineNumber, reviewComment }) => ({
-                    body: reviewComment,
-                    path: file.path,
-                    position: Number(lineNumber),
-                }));
-                fileChunkComments.push(...fileComments);
+    // TODO: Make this faster
+    async analyzeDiffAndGenerateComments(files, prDetails) {
+        const comments = [];
+        for (const file of files) {
+            if (file.to === "/dev/null")
+                continue; // Ignore deleted files
+            for (const chunk of file.chunks) {
+                const fileChunkComments = [];
+                // Generate a prompt for AI review
+                const prompt = (0, prompts_1.createPRReviewPrompt)(file, chunk, prDetails);
+                // Get AI response
+                const aiResponse = await this.aiService.getAIPullRequestResponse(prompt, this.appConfig.OPENAI_API_MODEL);
+                if (aiResponse && aiResponse.length > 0) {
+                    const fileComments = aiResponse.map(({ lineNumber, reviewComment }) => ({
+                        body: reviewComment,
+                        path: file.to,
+                        position: Number(lineNumber),
+                    }));
+                    fileChunkComments.push(...fileComments);
+                }
+                comments.push(...fileChunkComments);
             }
-            comments.push(...fileChunkComments);
         }
+        return comments;
     }
-    return comments;
 }
-(async () => {
-    try {
-        console.log("Starting script execution.");
-        await main();
-        console.log("Script executed successfully.");
-    }
-    catch (error) {
-        console.error("Error occurred during script execution:", error);
-        process.exit(1);
-    }
-})();
+exports.PRHandler = PRHandler;
 
 
 /***/ }),
@@ -39141,7 +39173,6 @@ async function analyzeDiffAndGenerateComments(files, prDetails, aiService, appCo
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.GitHubService = void 0;
 const rest_1 = __nccwpck_require__(5375);
-const fs_1 = __nccwpck_require__(7147);
 class GitHubService {
     token;
     octokit;
@@ -39152,31 +39183,60 @@ class GitHubService {
         }
         this.octokit = new rest_1.Octokit({ auth: token });
     }
-    async getPRMetadata(eventPath) {
+    async getPRMetadata(eventPayload) {
         try {
-            const event = JSON.parse((0, fs_1.readFileSync)(eventPath, "utf8"));
+            // Directly use the eventPayload object
+            const event = eventPayload;
+            // Extract necessary information from the event payload
             const repository = event.repository;
-            console.log('\nRepository: ', repository);
-            const number = event.number;
-            if (!repository || typeof number !== 'number') {
-                throw new Error("Invalid event data. Repository or PR number is missing.");
+            const issue = event.issue;
+            if (!repository || !issue || !issue.pull_request) {
+                throw new Error("Invalid event data. Repository or PR details are missing.");
             }
+            const pullNumber = issue.number;
+            // Fetch additional PR details if needed
             const prResponse = await this.octokit.pulls.get({
                 owner: repository.owner.login,
                 repo: repository.name,
-                pull_number: number,
+                pull_number: pullNumber,
             });
-            console.log('\nPR Response: ', prResponse);
+            // Fetch PR comments
+            const commentsResponse = await this.octokit.issues.listComments({
+                owner: repository.owner.login,
+                repo: repository.name,
+                issue_number: pullNumber,
+            });
+            // Map comments to PRComment format
+            const comments = commentsResponse.data.map(comment => ({
+                body: comment.body ? comment.body : "",
+                user: comment.user ? { login: comment.user.login, id: comment.user.id } : undefined,
+                id: comment.id,
+            }));
             return {
                 owner: repository.owner.login,
                 repo: repository.name,
-                pull_number: number,
+                pull_number: pullNumber,
                 title: prResponse.data.title ?? "",
-                description: prResponse.data.body ?? ""
+                description: prResponse.data.body ?? "",
+                comments: comments ? comments : [],
             };
         }
         catch (error) {
             console.error("Error fetching PR details:", error);
+            throw error;
+        }
+    }
+    async getPRComments(owner, repo, pull_number) {
+        try {
+            const comments = await this.octokit.issues.listComments({
+                owner,
+                repo,
+                issue_number: pull_number,
+            });
+            return comments.data.map(comment => `${comment.user?.login}: ${comment.body}`).join('\n');
+        }
+        catch (error) {
+            console.error(`Error fetching comments for PR #${pull_number}:`, error);
             throw error;
         }
     }
@@ -39211,6 +39271,62 @@ class GitHubService {
             throw error;
         }
     }
+    async createReviewCommentReply(owner, repo, pull_number, comment_id, body) {
+        try {
+            await this.octokit.pulls.createReplyForReviewComment({
+                owner,
+                repo,
+                pull_number,
+                body,
+                comment_id
+            });
+        }
+        catch (error) {
+            console.error(`Error replying to review comment ${comment_id} in PR #${pull_number}:`, error);
+            throw error;
+        }
+    }
+    async addReactionToComment(owner, repo, commentId, reaction) {
+        try {
+            await this.octokit.reactions.createForIssueComment({
+                owner,
+                repo,
+                comment_id: commentId,
+                content: reaction
+            });
+        }
+        catch (error) {
+            console.error(`Failed to add reaction to comment: ${error}`);
+        }
+    }
+    async createComment(owner, repo, pull_number, comment) {
+        try {
+            await this.octokit.issues.createComment({
+                owner,
+                repo,
+                issue_number: pull_number,
+                body: comment,
+            });
+        }
+        catch (error) {
+            console.error(`Error creating comment for PR #${pull_number}:`, error);
+            throw error;
+        }
+    }
+    async labelPullRequest(owner, repo, pull_number, labels) {
+        try {
+            await this.octokit.issues.addLabels({
+                owner,
+                repo,
+                issue_number: pull_number,
+                labels,
+            });
+        }
+        catch (error) {
+            console.error(`Error adding labels to PR #${pull_number}:`, error);
+            throw error;
+        }
+    }
 }
 exports.GitHubService = GitHubService;
 
@@ -39232,7 +39348,7 @@ class OpenAIService {
         this.apiKey = apiKey;
         this.openai = new openai_1.OpenAI({ apiKey });
     }
-    async getAIResponse(prompt, model) {
+    async getAIPullRequestResponse(prompt, model) {
         const queryConfig = {
             model,
             temperature: 0.3,
@@ -39254,35 +39370,109 @@ class OpenAIService {
             return null;
         }
     }
+    async getAIPullRequestCommentResponse(prompt, model) {
+        const queryConfig = {
+            model,
+            temperature: 0.3,
+            max_tokens: 500,
+            top_p: 1,
+            frequency_penalty: 0,
+            presence_penalty: 0,
+        };
+        try {
+            const response = await this.openai.chat.completions.create({
+                ...queryConfig,
+                messages: [{ role: "system", content: prompt }],
+            });
+            const res = response.choices[0].message?.content?.trim() || "";
+            return res;
+        }
+        catch (error) {
+            console.error("Error in OpenAI Service:", error);
+            return "I'm sorry, I couldn't generate a response at this time.";
+        }
+    }
 }
 exports.OpenAIService = OpenAIService;
 
 
 /***/ }),
 
-/***/ 239:
+/***/ 9318:
 /***/ ((__unused_webpack_module, exports) => {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.createPrompt = void 0;
-function createPrompt(file, chunk, prDetails) {
-    // Instructions for AI Review Process
-    const instructions = `Respond in JSON format: {"reviews": [{"lineNumber": <line_number>, "reviewComment": "<review comment>"}]}. 
-                        Provide only constructive feedback in the reviewComment after reviewing the code for security vulnerabilities and adherence to coding best practices for the given language.
-                        Make recommendations to make code more secure,faster easier to maintain, reduce redundancy.
-                        If no improvements are necessary, keep the "reviews" array empty. 
-                        Use GitHub Markdown format for comments. 
-                        Focus your review solely on the provided code, considering the PR context for holistic understanding. 
-                        Avoid suggesting the addition of code comments.`;
-    const prContext = `Review Context: Pull Request Title - '${prDetails.title}'. Description: ${prDetails.description}`;
-    const codeDiff = `Code to Review (File: ${file.path}): \n \`\`\` \ndiff ${chunk.content} ${chunk.changes.map(c => `${c.ln ? c.ln : c.ln2} ${c.content}`).join("\n")} \`\`\`\n`;
-    const prompt = `Review Task: ${instructions} \n Context: ${prContext} \n Code Diff: ${codeDiff}`;
+exports.createPRCommentResponsePrompt = exports.createPRReviewPrompt = exports.createBasePrompt = void 0;
+// Base Prompt with PR Context
+function createBasePrompt(prDetails) {
+    const prContext = `PR Title: ${prDetails.title}\nPR Description: ${prDetails.description}\nRepository Name: ${prDetails.repo}\n\n`;
+    return `You are Dexter AI, a sophisticated GitHub Actions bot designed to assist with codebase management, including reviewing pull requests, responding to comments, and suggesting improvements. 
+    Your responses should be informative, contextually relevant, and adhere to best practices in software development.                           
+    Provide constructive feedback after reviewing the code for security vulnerabilities and adherence to coding best practices. 
+    Make recommendations to improve code security, performance, and maintainability. Avoid unnecessary comments.\n\n${prContext}`;
+}
+exports.createBasePrompt = createBasePrompt;
+// Pull Request Review Prompt
+function createPRReviewPrompt(file, chunk, prDetails) {
+    const basePrompt = createBasePrompt(prDetails);
+    const instructions = `Your current task is to give high quality comments on the Pull Request based on the instructions given. Respond in JSON format: {"reviews": [{"lineNumber": <line_number>, "reviewComment": "<review comment>"}]}. \n\n`;
+    const codeDiff = `Code to Review (File: ${file.to}): \n\`\`\`\ndiff ${chunk.content} ${chunk.changes.map(c => `${c.ln ? c.ln : c.ln2} ${c.content}`).join("\n")}\n\`\`\`\n\n`;
+    const prompt = `${basePrompt}${instructions}${codeDiff}`;
+    console.log("Prompt: \n", prompt);
+    return prompt;
+}
+exports.createPRReviewPrompt = createPRReviewPrompt;
+// Pull Request Comment Response Prompt
+function createPRCommentResponsePrompt(prDetails, discussionThread, triggeringComment, commenterName, codeDiffs) {
+    const basePrompt = createBasePrompt(prDetails);
+    let codeDiffContext = '';
+    for (const file of codeDiffs) {
+        for (const chunk of file.chunks) {
+            const codeDiff = `Code to Review (File: ${file.to}): \n\`\`\`\ndiff ${chunk.content} ${chunk.changes.map(c => `${c.ln || c.ln2}: ${c.content}`).join("\n")}\n\`\`\`\n`;
+            codeDiffContext += codeDiff + '\n';
+        }
+    }
+    const prompt = `${basePrompt}
+        Task: Respond to a comment in a pull request adhering to the instructions given to you.
+
+        Code diff in the pull request:
+        ${codeDiffContext}
+
+        Discussion Thread:
+        ${discussionThread}
+
+        Reply to Comment by ${commenterName}: "${triggeringComment}"
+
+        Based on the provided discussion context and the specific query in the triggering comment, generate a suitable response that addresses ${commenterName}'s concerns or questions. 
+        Start your reply with "@${commenterName}" to make sure they get notified of your response.
+        `;
     console.log("Prompt: ", prompt);
     return prompt;
 }
-exports.createPrompt = createPrompt;
+exports.createPRCommentResponsePrompt = createPRCommentResponsePrompt;
+
+
+/***/ }),
+
+/***/ 239:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.filterFiles = void 0;
+const minimatch_1 = __nccwpck_require__(1953);
+function filterFiles(files, excludePatterns) {
+    // Split into an array of patterns
+    const patterns = excludePatterns.split(",").map((pattern) => pattern.trim());
+    // Return files that do not match any of the patterns
+    return files.filter((file) => {
+        return !patterns.some((pattern) => (0, minimatch_1.minimatch)(file.to ?? "", pattern));
+    });
+}
+exports.filterFiles = filterFiles;
 
 
 /***/ }),
@@ -48567,13 +48757,52 @@ module.exports = JSON.parse('[[[0,44],"disallowed_STD3_valid"],[[45,46],"valid"]
 /******/ 	if (typeof __nccwpck_require__ !== 'undefined') __nccwpck_require__.ab = __dirname + "/";
 /******/ 	
 /************************************************************************/
-/******/ 	
-/******/ 	// startup
-/******/ 	// Load entry module and return exports
-/******/ 	// This entry module is referenced by other modules so it can't be inlined
-/******/ 	var __webpack_exports__ = __nccwpck_require__(6144);
-/******/ 	module.exports = __webpack_exports__;
-/******/ 	
+var __webpack_exports__ = {};
+// This entry need to be wrapped in an IIFE because it need to be in strict mode.
+(() => {
+"use strict";
+var exports = __webpack_exports__;
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+const GitHubService_1 = __nccwpck_require__(4486);
+const OpenAIService_1 = __nccwpck_require__(9402);
+const PRHandler_1 = __nccwpck_require__(3359);
+const PRCommentHandler_1 = __nccwpck_require__(381);
+const config_1 = __nccwpck_require__(4561);
+const appConfig = (0, config_1.getConfig)();
+const githubService = new GitHubService_1.GitHubService(appConfig.GITHUB_TOKEN);
+const aiService = new OpenAIService_1.OpenAIService(appConfig.OPENAI_API_KEY);
+const prHandler = new PRHandler_1.PRHandler(githubService, aiService, appConfig);
+const prCommentHandler = new PRCommentHandler_1.PRCommentHandler(githubService, aiService, appConfig);
+// Example event data structure
+const event = {
+    eventName: process.env.GITHUB_EVENT_NAME,
+    payload: require(process.env.GITHUB_EVENT_PATH ?? ''),
+};
+(async () => {
+    try {
+        console.log("Starting event processing...");
+        console.log("Event name:\n", event.eventName);
+        console.log("Event payload:\n", event.payload);
+        if (event.eventName === 'pull_request') {
+            // Handle pull request events
+            await prHandler.handlePullRequest(event.payload);
+        }
+        else if (event.eventName === 'issue_comment') {
+            // Handle PR comment events
+            await prCommentHandler.handleCommentEvent(event.payload);
+        }
+        console.log("Event processing completed successfully.");
+    }
+    catch (error) {
+        console.error("Error occurred during event processing:", error);
+        process.exit(1);
+    }
+})();
+
+})();
+
+module.exports = __webpack_exports__;
 /******/ })()
 ;
 //# sourceMappingURL=index.js.map
