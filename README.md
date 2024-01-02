@@ -58,8 +58,6 @@ jobs:
 
 ## 🛣️ Future Development Roadmap
 
-### Short-Term Goals
-- **Enhanced Interactive Capabilities**: Implementing Dexter AI’s ability to respond to comments in PRs.
-- **Advanced Code Analysis with RAG**: Introducing Retriever-Answer Generator for sophisticated code analysis.
-- **Improved Issue and PR Labeling**: Advancing labeling features for better categorization.
-- **Automated PR Creation for Bugs and Vulnerabilities**: Developing automated PR generation for identified issues.
+Triggering GitHub Actions for every event and comment is expensive, using GitHub webhooks to listen to events is perhaps a better approach. 
+And with that, the Dexter AI project will continue under the name **DevApe** (devape.co). More details to be added soon!
+
