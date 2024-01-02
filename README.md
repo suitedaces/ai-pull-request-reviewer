@@ -1,4 +1,4 @@
-# 👨🏻‍🔧 Dexter AI: Empowering Development Teams
+# 👨🏻‍🔧 Dexter AI: Your AI PR Reviewer
 
 **For Developers, By Developers** 🛠️: Dexter AI enhances code reviews with an AI-powered approach, tailored to the needs of developers.
 
