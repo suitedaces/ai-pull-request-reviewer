@@ -58,6 +58,6 @@ jobs:
 
 ## 🛣️ Future Development Roadmap
 
-Triggering GitHub Actions for every event and comment is expensive, using GitHub webhooks to listen to events is perhaps a better approach. 
+Triggering GitHub Actions for every event and comment can cost money at scale, using GitHub webhooks to listen to events would be a better approach. 
 And with that, the Dexter AI project will continue under the name **DevApe** (devape.co). More details to be added soon!
 
